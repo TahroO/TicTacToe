@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TicTacToe</title>
+    <style>
+        body {
+            background: linear-gradient(45deg, hsl(339, 100%, 50%), hsl(114, 100%, 50%)) fixed;
+        }
+
+        /* Using grid layout on game board. */
+        #board {
+            display: grid;
+            grid-template-columns: 80px 80px 80px;
+            grid-template-rows: 80px 80px 80px;
+            column-gap: 5px;
+            row-gap: 5px;
+            padding: 2%;
+            justify-content: center;
+        }
+
+        #message {
+            display: grid;
+            justify-items: center;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        /* Center play button. */
+        #playButton {
+            display: block;
+            margin-top: 20px;
+            margin-right: auto;
+            margin-left: auto;
+        }
+
+        /* Hiding play button when game is running. */
+        .running #playButton {
+            visibility: hidden;
+        }
+
+        /* Fields / div container styling. */
+        .field {
+            background-repeat: no-repeat;
+            background-position: center;
+            border: 1px solid black;
+            background-color: #61d0e3;
+            border-radius: 5px;
+        }
+
+        .player-x {
+            background-image: url("img/x.png");
+            box-shadow: 2px 2px 3px #ff0059;
+        }
+
+        .player-o {
+            background-image: url("img/o.png");
+            box-shadow: 2px 2px 3px #08ff00;
+        }
+    </style>
+</head>
+<body>
+<div id="message">Drücken Sie Start!</div>
+<div>
+    <input type="button" onclick="startGame()" value="Start" id="playButton">
+</div>
+<div class="board" id="board">
+    <div class="field" data-row="0" data-column="0"></div>
+    <div class="field" data-row="0" data-column="1"></div>
+    <div class="field" data-row="0" data-column="2"></div>
+    <div class="field" data-row="1" data-column="0"></div>
+    <div class="field" data-row="1" data-column="1"></div>
+    <div class="field" data-row="1" data-column="2"></div>
+    <div class="field" data-row="2" data-column="0"></div>
+    <div class="field" data-row="2" data-column="1"></div>
+    <div class="field" data-row="2" data-column="2"></div>
+</div>
+<script>
+    var message = document.getElementById("message");
+    var board = null;
+    var player = 1;
+    // Reference all div fields.
+    var fields = document.querySelectorAll(".field");
+    // Preventing clicks if game is not running.
+    var isRunning = false;
+    // Values to store in field when clicked depending on player.
+    var PLAYER_X = 1, PLAYER_Y = -1;
+
+    function startGame() {
+        // Hide start button.
+        document.body.classList.add("running");
+        isRunning = true;
+        // Set default player to x.
+        player = PLAYER_X;
+        board = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
+        ];
+        // Clear board.
+        for (var i = 0; i < fields.length; i++) {
+            fields[i].classList.remove("player-x", "player-o");
+        }
+        message.innerText = "Player X ist am Zug!";
+    }
+
+    function stopGame(text) {
+        // Stop game after win or draw, show play button again.
+        document.body.classList.remove("running");
+        message.innerText = text;
+        isRunning = false;
+    }
+
+    function initialise() {
+        // Add event listener to all fields.
+        for (var i = 0; i < fields.length; i++) {
+            var fieldNow = fields[i];
+            fieldNow.addEventListener("click", playerClick);
+        }
+    }
+
+    function isValidMove(row, column) {
+        // Check if field is free and game is running.
+        return isRunning && board[row][column] === 0;
+    }
+
+    function isWin() {
+        // Player represented by values +1 and -1.
+        // Sum for win condition is 3 in absolute values.
+        var diagonal1 = 0;
+        var diagonal2 = 0;
+        for (var i = 0; i < 3; i++) {
+            var horizontal = 0;
+            var vertical = 0;
+            // Coordinates 0,0 / 1,1 / 2,2.
+            diagonal1 += board[i][i];
+            // Coordinates 0,2 / 1,1 / 2,0.
+            diagonal2 += board[i][2 - i];
+            for (var j = 0; j < 3; j++) {
+                // Summarize horizontal and vertical fields values.
+                // 3x3 Loops for each field.
+                horizontal += board[i][j];
+                vertical += board[j][i];
+            }
+            // Sum values are converted to absolute values / always positive.
+            // If a sum of 3 is reached -> is win.
+            if (Math.abs(horizontal) === 3 || Math.abs(vertical) === 3) {
+                return true;
+            }
+        }
+        return Math.abs(diagonal1) === 3 || Math.abs(diagonal2) === 3;
+    }
+
+    function isDraw() {
+        // Check all values of fields, storing result in absolute values.
+        var result = 0;
+        for (var i = 0; i < 3; i++) {
+            for (var j = 0; j < 3; j++) {
+                result += Math.abs(board[i][j]);
+            }
+        }
+        // All fields clicked -> sum of all absolute values = 9
+        // and not isWin comes true.
+        return result === 9;
+    }
+
+    function playerClick(event) {
+        // Clicked field.
+        var cell = event.target;
+        // Field coordinates set in div containers -> data row, data column.
+        var row = parseInt(cell.dataset.row);
+        var column = parseInt(cell.dataset.column);
+        if (isValidMove(row, column)) {
+            // Determining current players class.
+            var playerClass = player === PLAYER_X ? "player-x" : "player-o";
+            // Add current player class to field.
+            cell.classList.add(playerClass);
+            // Storing current player value in field.
+            board[row][column] = player;
+            // If win stop game.
+            if (isWin()) {
+                stopGame("Player " + (player === PLAYER_X ? "X" : "O") + " hat gewonnen!");
+                return;
+            }
+            // If draw stop game.
+            if (isDraw()) {
+                stopGame("Unentschieden!");
+                return;
+            }
+            // Toggle player each turn.
+            player *= -1;
+            // Display current player.
+            message.innerText = "Player " + (player === PLAYER_X ? "X" : "O") + " ist am Zug!";
+        }
+    }
+
+    // Initialise event listener on fields.
+    initialise();
+</script>
+</body>
+</html>
